@@ -41,6 +41,22 @@ impl World {
     }
 
     pub fn update(&self) {}
+
+    fn number_of_living_neighbours(&self, cell: &Cell) -> u32 {}
+
+    fn cell_in_world_bounds(&self, cell: &Cell) -> bool {
+        if cell.x < 0.0 {
+            false
+        } else if cell.x > self.width as f32 {
+            false
+        } else if cell.y < 0.0 {
+            false
+        } else if cell.y > self.height as f32 {
+            false
+        } else {
+            true
+        }
+    }
 }
 
 impl Drawable for World {
