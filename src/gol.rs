@@ -1,6 +1,9 @@
 use nannou::Draw;
 
-use crate::{cell::Drawable, world::World, CELL_COLUMNS, CELL_PX_SIZE, CELL_ROWS};
+use crate::{
+    cell::Cell, cell::CellState, cell::Drawable, world::World, CELL_COLUMNS, CELL_PX_SIZE,
+    CELL_ROWS,
+};
 use std::{thread, time};
 
 pub struct GOL {

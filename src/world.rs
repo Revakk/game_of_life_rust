@@ -1,3 +1,6 @@
+use std::array;
+use std::num;
+
 use nannou::{prelude::*, rand::seq::index};
 
 use crate::cell::*;
@@ -18,14 +21,14 @@ impl World {
             for y in 0..CELL_ROWS {
                 if x == y {
                     cells_new.push(Cell {
-                        x: x as f32,
-                        y: y as f32,
+                        x: x,
+                        y: y,
                         is_alive: true,
                     });
                 } else {
                     cells_new.push(Cell {
-                        x: x as f32,
-                        y: y as f32,
+                        x: x,
+                        y: y,
                         is_alive: false,
                     });
                 }
@@ -40,36 +43,112 @@ impl World {
         }
     }
 
-    pub fn update(&self) {}
+    //add neighbours to neighbours_to_check!!!!!!!!!!!
+    pub fn update(&mut self) {
+        let living_cells: Vec<Cell> = self
+            .cells
+            .clone()
+            .into_iter()
+            .filter(|cell| cell.is_alive == true)
+            .collect();
 
-    fn number_of_living_neighbours(&self, cell: &Cell) -> u32 {}
+        let mut neighbours_to_check: Vec<Cell> = vec![];
 
-    fn cell_in_world_bounds(&self, cell: &Cell) -> bool {
-        if cell.x < 0.0 {
-            false
-        } else if cell.x > self.width as f32 {
-            false
-        } else if cell.y < 0.0 {
-            false
-        } else if cell.y > self.height as f32 {
-            false
-        } else {
-            true
+        for living_cell in living_cells {
+            let living_neighbours_count =
+                number_of_living_neighbours(&self.cells, self.width, self.height, &living_cell);
+            if cell_in_world_bounds(self.width, self.height, &living_cell) {
+                match cell_state_from_neighbour_count(&living_cell, living_neighbours_count) {
+                    CellState::ALIVE => change_cell_state(
+                        &mut self.cells,
+                        self.width,
+                        self.height,
+                        &living_cell,
+                        true,
+                    ),
+                    CellState::DEAD => change_cell_state(
+                        &mut self.cells,
+                        self.width,
+                        self.height,
+                        &living_cell,
+                        false,
+                    ),
+                }
+            }
         }
     }
+}
+fn change_cell_state(
+    cells: &mut Vec<Cell>,
+    width: u32,
+    height: u32,
+    cell: &Cell,
+    desired_state: bool,
+) {
+    let position: usize = ((width * cell.x) + cell.y) as usize;
+    let mut cell_to_change = cells.get_mut(position).unwrap();
+    cell_to_change.is_alive = desired_state;
+}
+fn number_of_living_neighbours(cells: &Vec<Cell>, width: u32, height: u32, cell: &Cell) -> u32 {
+    let neighbours_states: Vec<[i32; 2]> = vec![
+        [-1, -1],
+        [-1, 0],
+        [-1, 1],
+        [0, -1],
+        [0, 1],
+        [1, -1],
+        [1, 0],
+        [1, 1],
+    ];
+
+    let mut number_of_living_n = 0;
+
+    for state in neighbours_states {
+        let state_cell: Cell = Cell {
+            x: (cell.x as i32 + state.get(0).unwrap()) as u32,
+            y: (cell.y as i32 + state.get(0).unwrap()) as u32,
+            is_alive: false,
+        };
+        if cell_in_world_bounds(width, height, &state_cell) {
+            if is_cell_alive(&cells, &state_cell) {
+                number_of_living_n += 1;
+            }
+        }
+    }
+    number_of_living_n
+}
+
+fn cell_in_world_bounds(width: u32, height: u32, cell: &Cell) -> bool {
+    if cell.x < 0 {
+        false
+    } else if cell.x > width {
+        false
+    } else if cell.y < 0 {
+        false
+    } else if cell.y > height {
+        false
+    } else {
+        true
+    }
+}
+
+fn is_cell_alive(cells: &Vec<Cell>, cell: &Cell) -> bool {
+    let position: usize = ((CELL_COLUMNS * cell.x) + cell.y) as usize;
+    let world_cell = cells.get(position).unwrap();
+    return world_cell.is_alive;
 }
 
 impl Drawable for World {
     fn draw(&self, draw: &Draw) {
         for cell in self.cells.iter() {
             let cell_color = if cell.is_alive == true { BLACK } else { WHITE };
-            let mut x_pos = cell.x * (CELL_PX_SIZE as f32);
-            x_pos -= (SCREEN_WIDTH / 2) as f32;
-            let mut y_pos = cell.y * (CELL_PX_SIZE as f32);
-            y_pos -= (SCREEN_HEIGHT / 2) as f32;
+            let mut x_pos = cell.x * CELL_PX_SIZE;
+            x_pos -= SCREEN_WIDTH / 2;
+            let mut y_pos = cell.y * CELL_PX_SIZE;
+            y_pos -= SCREEN_HEIGHT / 2;
 
             draw.rect()
-                .x_y(x_pos, y_pos)
+                .x_y(x_pos as f32, y_pos as f32)
                 .color(cell_color)
                 .width(CELL_PX_SIZE as f32 - 0.5)
                 .height(CELL_PX_SIZE as f32 - 0.5)
