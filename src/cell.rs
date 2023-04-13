@@ -1,13 +1,33 @@
 use nannou::prelude::*;
 
+#[derive(Clone)]
 pub struct Cell {
-    pub x: f32,
-    pub y: f32,
+    pub x: u32,
+    pub y: u32,
     pub is_alive: bool,
 }
 
 pub trait Drawable {
     fn draw(&self, draw: &Draw);
+}
+
+pub enum CellState {
+    ALIVE,
+    DEAD,
+}
+
+pub fn cell_state_from_neighbour_count(cell: &Cell, n_count: u32) -> CellState {
+    if cell.is_alive {
+        match n_count {
+            3..=4 => CellState::ALIVE,
+            _ => CellState::DEAD,
+        }
+    } else {
+        match n_count {
+            3 => CellState::ALIVE,
+            _ => CellState::DEAD,
+        }
+    }
 }
 
 //impl Drawable for Cell {
