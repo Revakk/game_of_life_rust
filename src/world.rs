@@ -13,6 +13,11 @@ pub struct World {
     cell_size_px: u32,
 }
 
+struct NeighboursState {
+    neighbours_to_check: Vec<Cell>,
+    living_neighbours_count: u32,
+}
+
 impl World {
     pub fn new(width: u32, height: u32, cell_size_px: u32) -> World {
         let mut cells_new: Vec<Cell> = vec![];
@@ -55,8 +60,13 @@ impl World {
         let mut neighbours_to_check: Vec<Cell> = vec![];
 
         for living_cell in living_cells {
-            let living_neighbours_count =
-                number_of_living_neighbours(&self.cells, self.width, self.height, &living_cell);
+            let living_neighbours_count = number_of_living_neighbours(
+                &self.cells,
+                self.width,
+                self.height,
+                &living_cell,
+                &mut Some(&mut neighbours_to_check),
+            );
             if cell_in_world_bounds(self.width, self.height, &living_cell) {
                 match cell_state_from_neighbour_count(&living_cell, living_neighbours_count) {
                     CellState::ALIVE => change_cell_state(
@@ -76,6 +86,16 @@ impl World {
                 }
             }
         }
+
+        for dead_cell in neighbours_to_check {
+            let living_neighbours_count = number_of_living_neighbours(
+                &self.cells,
+                self.width,
+                self.height,
+                &dead_cell,
+                &mut None,
+            );
+        }
     }
 }
 fn change_cell_state(
@@ -89,7 +109,13 @@ fn change_cell_state(
     let mut cell_to_change = cells.get_mut(position).unwrap();
     cell_to_change.is_alive = desired_state;
 }
-fn number_of_living_neighbours(cells: &Vec<Cell>, width: u32, height: u32, cell: &Cell) -> u32 {
+fn number_of_living_neighbours(
+    cells: &Vec<Cell>,
+    width: u32,
+    height: u32,
+    cell: &Cell,
+    neighbours_to_check: &mut Option<&mut Vec<Cell>>,
+) -> u32 {
     let neighbours_states: Vec<[i32; 2]> = vec![
         [-1, -1],
         [-1, 0],
@@ -112,6 +138,8 @@ fn number_of_living_neighbours(cells: &Vec<Cell>, width: u32, height: u32, cell:
         if cell_in_world_bounds(width, height, &state_cell) {
             if is_cell_alive(&cells, &state_cell) {
                 number_of_living_n += 1;
+            } else if neighbours_to_check.is_some() {
+                neighbours_to_check.unwrap().push(state_cell);
             }
         }
     }
