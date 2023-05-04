@@ -1,6 +1,7 @@
 use std::array;
 use std::num;
 
+use nannou::wgpu::PUSH_CONSTANT_ALIGNMENT;
 use nannou::{prelude::*, rand::seq::index};
 
 use crate::cell::*;
@@ -8,23 +9,41 @@ use crate::configs::*;
 
 pub struct World {
     cells: Vec<Cell>,
-    width: u32,
-    height: u32,
-    cell_size_px: u32,
+    width: i32,
+    height: i32,
+    cell_size_px: i32,
 }
 
-struct NeighboursState {
-    neighbours_to_check: Vec<Cell>,
-    living_neighbours_count: u32,
+struct NeighboursToCheck {
+    neighbours: Vec<Cell>,
+    already_checked: bool,
 }
 
 impl World {
-    pub fn new(width: u32, height: u32, cell_size_px: u32) -> World {
+    pub fn new(width: i32, height: i32, cell_size_px: i32) -> World {
         let mut cells_new: Vec<Cell> = vec![];
 
         for x in 0..CELL_COLUMNS {
             for y in 0..CELL_ROWS {
-                if x == y {
+                if x == 50 && y == 50 {
+                    cells_new.push(Cell {
+                        x: x,
+                        y: y,
+                        is_alive: true,
+                    });
+                } else if x == 51 && y == 51 {
+                    cells_new.push(Cell {
+                        x: x,
+                        y: y,
+                        is_alive: true,
+                    });
+                } else if x == 50 && y == 51 {
+                    cells_new.push(Cell {
+                        x: x,
+                        y: y,
+                        is_alive: true,
+                    });
+                } else if x == 51 && y == 50 {
                     cells_new.push(Cell {
                         x: x,
                         y: y,
@@ -57,51 +76,67 @@ impl World {
             .filter(|cell| cell.is_alive == true)
             .collect();
 
-        let mut neighbours_to_check: Vec<Cell> = vec![];
+        let mut neighbours_to_check = NeighboursToCheck {
+            neighbours: vec![],
+            already_checked: false,
+        };
 
+        let mut cells_to_change: Vec<Cell> = vec![];
         for living_cell in living_cells {
             let living_neighbours_count = number_of_living_neighbours(
                 &self.cells,
                 self.width,
                 self.height,
                 &living_cell,
-                &mut Some(&mut neighbours_to_check),
+                &mut neighbours_to_check,
             );
+            // cell should not change state mid-update, state updates should occur after all states are
+            // evaluated
             if cell_in_world_bounds(self.width, self.height, &living_cell) {
                 match cell_state_from_neighbour_count(&living_cell, living_neighbours_count) {
-                    CellState::ALIVE => change_cell_state(
-                        &mut self.cells,
-                        self.width,
-                        self.height,
-                        &living_cell,
-                        true,
-                    ),
-                    CellState::DEAD => change_cell_state(
-                        &mut self.cells,
-                        self.width,
-                        self.height,
-                        &living_cell,
-                        false,
-                    ),
+                    CellState::ALIVE => cells_to_change.push(Cell {
+                        x: living_cell.x,
+                        y: living_cell.y,
+                        is_alive: true,
+                    }),
+                    //change_cell_state(
+                    //&mut self.cells,
+                    //self.width,
+                    //self.height,
+                    //&living_cell,
+                    //true,
+                    //),
+                    CellState::DEAD => cells_to_change.push(Cell {
+                        x: living_cell.x,
+                        y: living_cell.y,
+                        is_alive: false,
+                    }),
+                    //change_cell_state(
+                    //    &mut self.cells,
+                    //    self.width,
+                    //    self.height,
+                    //    &living_cell,
+                    //    false,
+                    //),
                 }
             }
         }
 
-        for dead_cell in neighbours_to_check {
+        for dead_cell in neighbours_to_check.neighbours.clone() {
             let living_neighbours_count = number_of_living_neighbours(
                 &self.cells,
                 self.width,
                 self.height,
                 &dead_cell,
-                &mut None,
+                &mut neighbours_to_check,
             );
         }
     }
 }
 fn change_cell_state(
     cells: &mut Vec<Cell>,
-    width: u32,
-    height: u32,
+    width: i32,
+    height: i32,
     cell: &Cell,
     desired_state: bool,
 ) {
@@ -111,10 +146,10 @@ fn change_cell_state(
 }
 fn number_of_living_neighbours(
     cells: &Vec<Cell>,
-    width: u32,
-    height: u32,
+    width: i32,
+    height: i32,
     cell: &Cell,
-    neighbours_to_check: &mut Option<&mut Vec<Cell>>,
+    neighbours_to_check: &mut NeighboursToCheck,
 ) -> u32 {
     let neighbours_states: Vec<[i32; 2]> = vec![
         [-1, -1],
@@ -131,29 +166,30 @@ fn number_of_living_neighbours(
 
     for state in neighbours_states {
         let state_cell: Cell = Cell {
-            x: (cell.x as i32 + state.get(0).unwrap()) as u32,
-            y: (cell.y as i32 + state.get(0).unwrap()) as u32,
+            x: cell.x + state.get(0).unwrap(),
+            y: cell.y + state.get(0).unwrap(),
             is_alive: false,
         };
         if cell_in_world_bounds(width, height, &state_cell) {
+            println!("Check cell in bound: x:{},y:{}", state_cell.x, state_cell.y);
             if is_cell_alive(&cells, &state_cell) {
                 number_of_living_n += 1;
-            } else if neighbours_to_check.is_some() {
-                neighbours_to_check.unwrap().push(state_cell);
+            } else if neighbours_to_check.already_checked == false {
+                neighbours_to_check.neighbours.push(state_cell);
             }
         }
     }
     number_of_living_n
 }
 
-fn cell_in_world_bounds(width: u32, height: u32, cell: &Cell) -> bool {
+fn cell_in_world_bounds(width: i32, height: i32, cell: &Cell) -> bool {
     if cell.x < 0 {
         false
-    } else if cell.x > width {
+    } else if cell.x >= width {
         false
     } else if cell.y < 0 {
         false
-    } else if cell.y > height {
+    } else if cell.y >= height {
         false
     } else {
         true
@@ -162,6 +198,7 @@ fn cell_in_world_bounds(width: u32, height: u32, cell: &Cell) -> bool {
 
 fn is_cell_alive(cells: &Vec<Cell>, cell: &Cell) -> bool {
     let position: usize = ((CELL_COLUMNS * cell.x) + cell.y) as usize;
+    println!("pos: {}, size: {}", position, cells.len());
     let world_cell = cells.get(position).unwrap();
     return world_cell.is_alive;
 }
