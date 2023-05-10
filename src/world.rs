@@ -49,6 +49,42 @@ impl World {
                         y: y,
                         is_alive: true,
                     });
+                } else if x == 11 && y == 12 {
+                    cells_new.push(Cell {
+                        x: x,
+                        y: y,
+                        is_alive: true,
+                    });
+                } else if x == 12 && y == 11 {
+                    cells_new.push(Cell {
+                        x: x,
+                        y: y,
+                        is_alive: true,
+                    });
+                } else if x == 10 && y == 10 {
+                    cells_new.push(Cell {
+                        x: x,
+                        y: y,
+                        is_alive: true,
+                    });
+                } else if x == 11 && y == 10 {
+                    cells_new.push(Cell {
+                        x: x,
+                        y: y,
+                        is_alive: true,
+                    });
+                } else if x == 12 && y == 10 {
+                    cells_new.push(Cell {
+                        x: x,
+                        y: y,
+                        is_alive: true,
+                    });
+                } else if x == 0 && y == 0 {
+                    cells_new.push(Cell {
+                        x: x,
+                        y: y,
+                        is_alive: true,
+                    });
                 } else {
                     cells_new.push(Cell {
                         x: x,
@@ -122,27 +158,38 @@ impl World {
             }
         }
 
-        for dead_cell in neighbours_to_check.neighbours.clone() {
+        for dead_neighbour_cell in neighbours_to_check.neighbours.clone() {
             let living_neighbours_count = number_of_living_neighbours(
                 &self.cells,
                 self.width,
                 self.height,
-                &dead_cell,
+                &dead_neighbour_cell,
                 &mut neighbours_to_check,
             );
+            match cell_state_from_neighbour_count(&dead_neighbour_cell, living_neighbours_count) {
+                CellState::ALIVE => cells_to_change.push(Cell {
+                    x: dead_neighbour_cell.x,
+                    y: dead_neighbour_cell.y,
+                    is_alive: true,
+                }),
+
+                CellState::DEAD => cells_to_change.push(Cell {
+                    x: dead_neighbour_cell.x,
+                    y: dead_neighbour_cell.y,
+                    is_alive: false,
+                }),
+            }
+        }
+
+        for changing_cell in cells_to_change {
+            change_cell_state(&mut self.cells, self.width, self.height, &changing_cell)
         }
     }
 }
-fn change_cell_state(
-    cells: &mut Vec<Cell>,
-    width: i32,
-    height: i32,
-    cell: &Cell,
-    desired_state: bool,
-) {
-    let position: usize = ((width * cell.x) + cell.y) as usize;
+fn change_cell_state(cells: &mut Vec<Cell>, width: i32, height: i32, changing_cell: &Cell) {
+    let position: usize = ((width * changing_cell.x) + changing_cell.y) as usize;
     let mut cell_to_change = cells.get_mut(position).unwrap();
-    cell_to_change.is_alive = desired_state;
+    cell_to_change.is_alive = changing_cell.is_alive;
 }
 fn number_of_living_neighbours(
     cells: &Vec<Cell>,
@@ -183,13 +230,13 @@ fn number_of_living_neighbours(
 }
 
 fn cell_in_world_bounds(width: i32, height: i32, cell: &Cell) -> bool {
-    if cell.x < 0 {
+    if cell.x >= width {
         false
-    } else if cell.x >= width {
-        false
-    } else if cell.y < 0 {
+    } else if cell.x < 0 {
         false
     } else if cell.y >= height {
+        false
+    } else if cell.y < 0 {
         false
     } else {
         true
@@ -200,6 +247,7 @@ fn is_cell_alive(cells: &Vec<Cell>, cell: &Cell) -> bool {
     let position: usize = ((CELL_COLUMNS * cell.x) + cell.y) as usize;
     println!("pos: {}, size: {}", position, cells.len());
     let world_cell = cells.get(position).unwrap();
+    println!("pos: x:{},y:{}", world_cell.x, world_cell.y);
     return world_cell.is_alive;
 }
 

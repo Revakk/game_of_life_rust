@@ -24,9 +24,8 @@ impl GOL {
     }
 
     pub fn update(&mut self) {
-        self.world.update();
-
         let time_to_sleep = std::time::Duration::from_secs(self.update_time);
         std::thread::sleep(time_to_sleep);
+        self.world.update();
     }
 }

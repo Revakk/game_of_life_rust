@@ -19,7 +19,7 @@ pub enum CellState {
 pub fn cell_state_from_neighbour_count(cell: &Cell, n_count: u32) -> CellState {
     if cell.is_alive {
         match n_count {
-            3..=4 => CellState::ALIVE,
+            2..=3 => CellState::ALIVE,
             _ => CellState::DEAD,
         }
     } else {
