@@ -211,10 +211,12 @@ fn number_of_living_neighbours(
 
     let mut number_of_living_n = 0;
 
+    println!("##################################");
+    println!("Checking states for cell: x:{},y:{}", cell.x, cell.y);
     for state in neighbours_states {
         let state_cell: Cell = Cell {
             x: cell.x + state.get(0).unwrap(),
-            y: cell.y + state.get(0).unwrap(),
+            y: cell.y + state.get(1).unwrap(),
             is_alive: false,
         };
         if cell_in_world_bounds(width, height, &state_cell) {
