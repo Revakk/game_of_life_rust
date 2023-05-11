@@ -18,7 +18,7 @@ fn update(_app: &App, gol: &mut GOL, _: Update) {
 }
 
 fn setup(app: &App) -> GOL {
-    let _window = app.new_window().view(view).build().unwrap();
+    let window = app.new_window().view(view).build().unwrap();
 
     GOL::new()
 }
