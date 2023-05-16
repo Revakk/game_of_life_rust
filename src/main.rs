@@ -5,6 +5,7 @@ struct Model {}
 
 fn main() {
     nannou::app(setup)
+        .event(event)
         .size(
             game_of_life::SCREEN_WIDTH as u32,
             game_of_life::SCREEN_HEIGHT as u32,
@@ -18,12 +19,24 @@ fn update(_app: &App, gol: &mut GOL, _: Update) {
 }
 
 fn setup(app: &App) -> GOL {
-    let window = app.new_window().view(view).build().unwrap();
+    let window = app
+        .new_window()
+        .mouse_pressed(mouse_pressed)
+        .view(view)
+        .build()
+        .unwrap();
 
     GOL::new()
 }
 
-fn event(_app: &App, _model: &mut Model, _event: Event) {}
+fn mouse_pressed(_app: &App, _model: &mut Model, _button: MouseButton) {}
+
+fn event(_app: &App, _model: &mut Model, event: Event) {
+    match event {
+        Event::WindowEvent { id: _, simple: _ } => {}
+        _ => {}
+    }
+}
 
 fn view(app: &App, gol: &GOL, frame: Frame) {
     let draw = app.draw();
