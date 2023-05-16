@@ -103,6 +103,16 @@ impl World {
         }
     }
 
+    pub fn add_living_cell(&mut self, living_cell: Cell) {
+        let position: usize = ((self.width * living_cell.x) + living_cell.y) as usize;
+        self.cells.get_mut(position).unwrap().is_alive = true;
+    }
+
+    pub fn add_dead_cell(&mut self, dead_cell: Cell) {
+        let position: usize = ((self.width * dead_cell.x) + dead_cell.y) as usize;
+        self.cells.get_mut(position).unwrap().is_alive = false;
+    }
+
     //add neighbours to neighbours_to_check!!!!!!!!!!!
     pub fn update(&mut self) {
         let living_cells: Vec<Cell> = self
